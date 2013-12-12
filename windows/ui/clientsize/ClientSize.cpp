@@ -47,8 +47,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	}
 
 	hwnd = CreateWindowEx(
-		WS_EX_COMPOSITED,
-		//NULL,
+		NULL,
 		szAppName,                  // window class name
 		TEXT ("The Hello Program"), // window caption
 		WS_OVERLAPPEDWINDOW,        // window style
@@ -83,76 +82,99 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_PAINT:
 		{
-			printf("%d WM_PAINT\n", nCount++);
 			hdc = BeginPaint(hWnd, &ps);
-			TCHAR test[] = 
-				TEXT("缩小缩小客户区的例子缩小客户区的例子缩小客户区的例子缩小客户区的例子缩小客户区的例子缩小客户区的例子缩小客户区的例子缩小客户区的例子缩小客户区的例子缩小客户区的例子缩小客户区的例子缩小客户区的例子客户区的例子");
-			TextOut(hdc,0,0,test,lstrlen(test));
+			LOGBRUSH lb;
+			lb.lbColor = RGB(0xff, 0x00, 0x00);
+			lb.lbStyle = BS_SOLID;
+			HBRUSH hbr = CreateBrushIndirect(&lb);
+			RECT rc;
+			GetClientRect(hWnd, &rc);
+			FillRect(hdc, &rc, hbr);
+			DeleteObject(hbr);
 			EndPaint(hWnd, &ps);
 			return 0;
 		}
-
 	case WM_DESTROY:
 		{
 			PostQuitMessage(0);
 			return 0;
 		}
-	
 	case WM_NCCALCSIZE: 
 		{
-			printf("%d WM_NCCALCSIZE\n", nCount++);
 			RECT *rect = (LPRECT)lParam;
-			if (wParam == TRUE)
-			{
-				InflateRect(rect, -50, -50);
-				/*RECT dstRect = *(LPRECT)lParam;
-				RECT srcRect = rect[1];
-				rect[1] = dstRect;
-				rect[2] = srcRect;*/
-
-				return 0;
-			}
-			else
-			{
-				InflateRect(rect, -50, -50);
-				return 0;
-			}
+			rect->top += 0;
+			rect->left += 8;
+			rect->right -= 8;
+			rect->bottom -= 8;
+			return 0;
 		}
-
 	case WM_ERASEBKGND:
 		{
-			printf("%d WM_ERASEBKGND called\n", nCount++);
-			break;
+			return 1;
 		}
-
 	case WM_NCPAINT:
 		{
-			printf("%d WM_NCPAINT\n", nCount++);
-			HDC hdc = GetWindowDC(hWnd);
+	//		//printf("%d WM_NCPAINT\n", nCount++);
 			RECT rcWnd;
-			GetWindowRect(hWnd, &rcWnd);
-			rcWnd.right -= rcWnd.left;
-			rcWnd.bottom -= rcWnd.top;
-			rcWnd.left = rcWnd.top = 0;
+			RECT rcClient;
+			HRGN nonClient, rgn;
+			if (wParam == 1) {
+				GetWindowRect(hWnd, &rcWnd);
+				rgn = CreateRectRgnIndirect(&rcWnd);
+			} else {
+				rgn = reinterpret_cast<HRGN>(wParam);
+				RECT rcbox;
+				GetRgnBox(rgn, &rcbox);
+				char buff[256];
+				sprintf(buff, "rcbox (%d, %d, %d, %d)\n", rcbox.left, rcbox.top, rcbox.right, rcbox.bottom);
+				OutputDebugStringA(buff);
+			}
+			GetClientRect(hWnd, &rcClient);
+			MapWindowPoints(hWnd, NULL, reinterpret_cast<LPPOINT>(&rcClient), 2);
+			rcClient.left -= rcWnd.left;
+			rcClient.right -= rcWnd.left;
+			rcClient.bottom -= rcWnd.top;
+			rcClient.top -= rcWnd.top;
+
+			rcWnd.right = rcWnd.right - rcWnd.left;
+			rcWnd.bottom = rcWnd.bottom - rcWnd.top;
+			rcWnd.left = 0;
+			rcWnd.top = 0;
+			rgn = CreateRectRgnIndirect(&rcWnd);
+			nonClient = CreateRectRgnIndirect(&rcClient);
+			CombineRgn(rgn, rgn, nonClient, RGN_DIFF);
+			DeleteObject(nonClient);
+
+			HDC hdc = GetWindowDC(hWnd);
 			LOGBRUSH lb;
 			lb.lbColor = RGB(0x00, 0xff, 0x00);
 			lb.lbStyle = BS_SOLID;
-			
+			HBRUSH hbr = CreateBrushIndirect(&lb);
+			SelectObject(hdc, hbr);
+			PaintRgn(hdc, rgn);
+			DeleteObject(hbr);
 			FillRect(hdc, &rcWnd,  CreateBrushIndirect(&lb));
-			break;
-		}
+			ReleaseDC(hWnd, hdc);
 
+			LRESULT ret = DefWindowProc(hWnd, WM_NCPAINT, reinterpret_cast<WPARAM>(rgn), lParam);
+
+			if (rgn != reinterpret_cast<HRGN>(wParam))
+				DeleteObject(rgn);
+			return ret;
+			//return 0;
+	//		return DefWindowProc(hWnd, message, wParam, lParam);
+		}
 	case WM_SIZE:
 		{
-			printf("%d WM_SIZE\n", nCount++);
+			InvalidateRect(hWnd, NULL, FALSE);
+			//printf("%d WM_SIZE\n", nCount++);
 			break;
 		}
-
-	case WM_ACTIVATE:
-		{
-			printf("%d WM_ACTIVATE\n", nCount++);
-			break;
-		}
+	//case WM_ACTIVATE:
+	//	{
+	//		//printf("%d WM_ACTIVATE\n", nCount++);
+	//		break;
+	//	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
