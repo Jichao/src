@@ -1,0 +1,3 @@
+[submodule "mozilla/xul/examples"]
+	path = mozilla/xul/examples
+	url = https://github.com/matthewkastor/XULRunner-Examples.git
