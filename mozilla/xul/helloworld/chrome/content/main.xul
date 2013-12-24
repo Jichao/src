@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://myapp/content/main.css" type="text/css"?>
 
 <window id="main" title="My App" width="300" height="300" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
@@ -8,7 +9,13 @@
 
   <caption label="Hello World"/>
   <separator/>
-  <button label="More >>" oncommand="showMore();"/>
+  <hbox>
+	  <button label="Yes"/>
+	  <spacer flex="1"/>
+	  <button id="showmore" label="More >>" oncommand="showMore();"/>
+	  <button label="No"/>
+	  <!--<button label="I really don't know one way or the other"/>-->
+  </hbox>
   <separator/>
   <description id="more-text" hidden="true">This is a simple XULRunner application. XUL is simple to use and quite powerful and can even be used on mobile devices.</description>
 
